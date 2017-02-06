@@ -1,0 +1,69 @@
+---
+title: "courseProject2"
+output: html_document
+---
+
+```{r setup, include=FALSE, cache=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+First of all, the data is collected from U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage. During this work, the most important event of public healthy and economical consequence will be explorated. 
+
+## Summary
+According to data of NOAA, the top 10 event effect public healthy and economic are found. To evaluate the public health the data of fatalities and injuries were used together, similarly, the propery damage and crop damage were used to evalue the economical consequences. It is find that the Tornado, Heat, Wind, Lightning and Flood are most harmful for public healthy. Correspondingly, Flash Flood, Tornado and Wind would cause the greatest damage.   
+Furthermore, it is found that flood and current are more fatal than wind according to the data of "FATALITIES" and "INJURIES". And Flood cause more Propery damage than Winds or Tornado, but Hail causes more Crop damage.
+
+## Data Processing
+First load the data from url, and read only certain column of event types, fatality, injury, prop damage and crop damage of the data set. Then, because of the lack data in early time, only half newly records is used. Finally, to explore the harmful degree to public healthy, fatalities and injuries are combined together. Corresponding, the damages are combined together to find out the economical consequence.
+```{r echo = TRUE,  cache=TRUE}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+if(!file.exists('StormData.csv.bz2')){
+    download.file(fileUrl, 'StormData.csv.bz2')
+}
+df <- read.csv('StormData.csv.bz2')[, c('BGN_DATE','EVTYPE','FATALITIES','INJURIES', 'PROPDMG','CROPDMG')]
+df <- df[400000:nrow(df),]
+sum_df <- summarise(group_by(df, EVTYPE), FATALITIES = sum(FATALITIES), INJURIES = sum(INJURIES),
+                 PROPDMG = sum(PROPDMG), CROPDMG = sum(CROPDMG))
+sum_df <- mutate(sum_df, harmful = FATALITIES + INJURIES)
+sum_df <- mutate(sum_df, damage = PROPDMG + CROPDMG)
+```
+
+##Results
+Rearrange the event type with index as harmful and damage which corresponding to the results. And the top 5 of fatalities and injuries or damages. And the Top 15 are showed in table.
+```{r echo = TRUE}
+library(dplyr)
+harm <- arrange(sum_df, desc(harmful))
+head(harm, 10)
+fata <- arrange(sum_df, desc(FATALITIES))
+head(fata, 5)
+injury <- arrange(sum_df, desc(INJURIES))
+head(injury, 5)
+expense <- arrange(sum_df, desc(damage))
+head(expense, 10)
+propd <- arrange(sum_df, desc(PROPDMG))
+head(propd, 5)
+cropd <- arrange(sum_df, desc(CROPDMG))
+head(cropd, 5)
+```
+## Including Plots
+
+First, plot the most harmful 15 result in bar plot.
+```{r harmful, echo=TRUE}
+library(ggplot2)
+p <- ggplot(harm[1:15,], aes(x = reorder(EVTYPE, -harmful), y = harmful))
+p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p + geom_bar(stat = "identity", fill="white", colour="darkgreen") + labs(title = "Most Harmful Event Type For Public Health Top 15",
+                                       x = "Event Type", y = "Fatalities & Injuries")
+```
+
+Then, the most greastest events for economical damage is showed following
+```{r consequence, echo=TRUE}
+library(ggplot2)
+p <- ggplot(expense[1:15,], aes(x = reorder(EVTYPE, -damage), y = damage))
+p <- p + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p + geom_bar(stat = "identity", fill="white", colour="darkgreen") + labs(title = "Greatest Economic Consequences of Event Types Top 15",
+                                       x = "Event Type", y = "Prop & Crop Damage")
+```
+
